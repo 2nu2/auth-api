@@ -1,69 +1,49 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+import { supabase } from '../../libs/supabase'
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' })
-  }
+  if (req.method !== 'POST')
+    return res.status(405).json({ error: 'Method not allowed' })
 
   const { key, hwid, version } = req.body
 
-  if (!key || !hwid) {
-    return res.json({ success: false, message: 'Missing data' })
-  }
+  if (!key)
+    return res.status(400).json({ error: 'Key required' })
 
-  // busca key
   const { data, error } = await supabase
     .from('licenses')
     .select('*')
     .eq('key', key)
     .single()
 
-  if (error || !data) {
-    return res.json({ success: false, message: 'Invalid key' })
+  if (error || !data)
+    return res.status(401).json({ error: 'Invalid key' })
+
+  if (!data.is_active)
+    return res.status(403).json({ error: 'Key disabled' })
+
+  if (data.expires_at && new Date(data.expires_at) < new Date())
+    return res.status(403).json({ error: 'Key expired' })
+
+  // trava HWID
+  if (!data.hwid && hwid) {
+    await supabase
+      .from('licenses')
+      .update({ hwid })
+      .eq('id', data.id)
+  } else if (data.hwid && data.hwid !== hwid) {
+    return res.status(403).json({ error: 'HWID mismatch' })
   }
 
-  if (!data.is_active) {
-    return res.json({ success: false, message: 'Key disabled' })
-  }
-
-  // versão
+  // checagem de versão
   if (data.version && data.version !== version) {
-    return res.json({
-      success: false,
-      update: true,
-      message: 'Update required'
+    return res.status(426).json({
+      error: 'Update required',
+      version: data.version
     })
   }
 
-  // expiração
-  if (data.expires_at && new Date(data.expires_at) < new Date()) {
-    return res.json({ success: false, message: 'Key expired' })
-  }
-
-  // HWID
-  if (data.hwid && data.hwid !== hwid) {
-    return res.json({ success: false, message: 'HWID mismatch' })
-  }
-
-  // primeiro login → registra hwid
-  if (!data.hwid) {
-    await supabase
-      .from('licenses')
-      .update({
-        hwid: hwid,
-        last_ip: req.headers['x-forwarded-for'] || 'unknown'
-      })
-      .eq('id', data.id)
-  }
-
-  return res.json({
+  return res.status(200).json({
     success: true,
-    message: 'Authorized',
     expires_at: data.expires_at
   })
 }
