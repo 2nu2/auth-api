@@ -1,6 +1,75 @@
 <div style={{color:"#fff"}}>VERSAO NOVA 123</div>
 
 
+import { useState } from "react";
+
+export default function AdminPanel() {
+  const [version, setVersion] = useState("1.0");
+  const [onlyActive, setOnlyActive] = useState(true);
+  const [msg, setMsg] = useState("");
+
+  async function bulkUpdate() {
+    setMsg("Atualizando...");
+    const r = await fetch("/api/admin/bulk-update-version", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ version, only_active: onlyActive }),
+    });
+    const j = await r.json();
+    setMsg(j.ok ? `✅ ${j.updated} keys atualizadas para v${j.version}` : `❌ ${j.message}`);
+  }
+
+  return (
+    <div style={{ background: "#0b0b0b", color: "#fff", minHeight: "100vh", padding: 30, fontFamily: "Arial" }}>
+      <h1 style={{ marginBottom: 10 }}>🔐 Painel Admin</h1>
+
+      <div style={{ maxWidth: 520, border: "1px solid #222", borderRadius: 12, padding: 16, background: "#0f0f0f" }}>
+        <h2 style={{ marginTop: 0 }}>Atualizar versão das keys</h2>
+
+        <label style={{ display: "block", marginBottom: 8, opacity: 0.85 }}>Versão desejada</label>
+        <input
+          value={version}
+          onChange={(e) => setVersion(e.target.value)}
+          placeholder="ex: 1.1"
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 10,
+            border: "1px solid #333",
+            background: "#0b0b0b",
+            color: "#fff",
+            outline: "none",
+            marginBottom: 12,
+          }}
+        />
+
+        <label style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+          <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} />
+          <span>Atualizar apenas keys ativas</span>
+        </label>
+
+        <button
+          onClick={bulkUpdate}
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 10,
+            border: "none",
+            background: "#00ff99",
+            cursor: "pointer",
+            fontWeight: 700,
+          }}
+        >
+          Atualizar versão de todas
+        </button>
+
+        {msg && <p style={{ marginTop: 12, opacity: 0.9 }}>{msg}</p>}
+      </div>
+    </div>
+  );
+}
+
+
 import { useEffect, useMemo, useState } from "react";
 
 export default function AdminPanel() {
