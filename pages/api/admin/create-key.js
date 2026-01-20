@@ -1,62 +1,88 @@
 // pages/api/admin/create-key.js
-import crypto from "crypto";
-import { requireAdmin } from "../../../libs/adminAuth";
 import { supabaseAdmin } from "../../../libs/supabaseAdmin";
+import { getAdminFromRequest } from "../../../libs/adminAuth";
 
-function makeKey() {
-  // Ex: MAL0-8F2A-19CD-77B1
-  const part = () => crypto.randomBytes(2).toString("hex").toUpperCase();
-  return `MAL0-${part()}${part()}-${part()}${part()}-${part()}${part()}`;
+function randomBlock(len = 4) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem O/0/I/1 pra evitar confusão
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
 }
 
-function addDaysIso(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString();
+function generateKey() {
+  return `mal0-${randomBlock(4)}-${randomBlock(4)}`;
 }
 
 export default async function handler(req, res) {
-  const admin = requireAdmin(req, res);
-  if (!admin) return;
-
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, message: "Method not allowed" });
   }
 
+  // valida admin logado via cookie JWT
+  const admin = getAdminFromRequest(req);
+  if (!admin) {
+    return res.status(401).json({ ok: false, message: "Não autorizado" });
+  }
+
   try {
-    const days = Number(req.body?.days ?? 30);
-    if (!Number.isFinite(days) || days < 1 || days > 3650) {
-      return res.status(400).json({ ok: false, message: "days inválido" });
-    }
+    const body = req.body || {};
+    const days = Number.isFinite(+body.days) ? Math.max(0, parseInt(body.days, 10)) : 30;
+    const version = typeof body.version === "string" && body.version.trim() ? body.version.trim() : "1.0";
+    const is_active = body.is_active === false ? false : true;
 
-    // tenta algumas vezes pra evitar colisão
-    for (let i = 0; i < 5; i++) {
-      const key = makeKey();
-      const expires_at = addDaysIso(days);
+    // expiração
+    const expires_at = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-      const { data, error } = await supabaseAdmin
+    // tenta gerar key única (retries)
+    let newKey = null;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const candidate = generateKey();
+
+      // check rápido (por causa do UNIQUE, mas isso dá uma msg mais amigável)
+      const { data: exists } = await supabaseAdmin
         .from("licenses")
-        .insert({
-          key,
-          expires_at,
-          is_active: true,
-          hwid: null,
-        })
-        .select()
-        .single();
+        .select("id")
+        .eq("key", candidate)
+        .maybeSingle();
 
-      if (!error) {
-        return res.status(200).json({ ok: true, license: data });
-      }
-
-      // se for key duplicada, tenta de novo
-      if (!String(error.message || "").toLowerCase().includes("duplicate")) {
-        return res.status(500).json({ ok: false, message: error.message });
+      if (!exists) {
+        newKey = candidate;
+        break;
       }
     }
 
-    return res.status(500).json({ ok: false, message: "Falha ao gerar key (colisão)" });
+    if (!newKey) {
+      return res.status(500).json({ ok: false, message: "Falha ao gerar key (colisão). Tente novamente." });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("licenses")
+      .insert([
+        {
+          key: newKey,
+          hwid: null,
+          expires_at,
+          is_active,
+          version,
+          last_ip: null,
+        },
+      ])
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ ok: false, message: "Erro ao inserir: " + error.message });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: "Key criada",
+      key: data.key,
+      expires_at: data.expires_at,
+      is_active: data.is_active,
+      version: data.version,
+    });
   } catch (e) {
-    return res.status(500).json({ ok: false, message: String(e?.message || e) });
+    return res.status(500).json({ ok: false, message: "Erro: " + e.message });
   }
 }
