@@ -1,26 +1,16 @@
-// libs/adminAuth.js
-import jwt from "jsonwebtoken";
-import cookie from "cookie";
+import { getAdminFromRequest } from "../../../libs/adminAuth";
 
-export function requireAdmin(req, res) {
+export default async function handler(req, res) {
   try {
-    const cookies = cookie.parse(req.headers.cookie || "");
-    const token = cookies.admin_token;
+    const admin = await getAdminFromRequest(req);
+    if (!admin) return res.status(200).json({ ok: false });
 
-    if (!token) {
-      res.status(401).json({ ok: false, message: "Not logged" });
-      return null;
-    }
-
-    const payload = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
-    if (!payload?.user) {
-      res.status(401).json({ ok: false, message: "Invalid token" });
-      return null;
-    }
-
-    return payload; // { user, role, ... }
+    return res.status(200).json({
+      ok: true,
+      user_name: admin.user_name,
+      role: admin.role,
+    });
   } catch (e) {
-    res.status(401).json({ ok: false, message: "Invalid token" });
-    return null;
+    return res.status(200).json({ ok: false });
   }
 }
