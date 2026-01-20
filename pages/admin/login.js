@@ -1,3 +1,5 @@
+<div style={{color:"#fff"}}>VERSAO NOVA 123</div>
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
