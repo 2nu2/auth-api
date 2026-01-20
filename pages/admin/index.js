@@ -1,87 +1,25 @@
-<div style={{color:"#fff"}}>VERSAO NOVA 123</div>
-
-
-import { useState } from "react";
-
-export default function AdminPanel() {
-  const [version, setVersion] = useState("1.0");
-  const [onlyActive, setOnlyActive] = useState(true);
-  const [msg, setMsg] = useState("");
-
-  async function bulkUpdate() {
-    setMsg("Atualizando...");
-    const r = await fetch("/api/admin/bulk-update-version", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ version, only_active: onlyActive }),
-    });
-    const j = await r.json();
-    setMsg(j.ok ? `✅ ${j.updated} keys atualizadas para v${j.version}` : `❌ ${j.message}`);
-  }
-
-  return (
-    <div style={{ background: "#0b0b0b", color: "#fff", minHeight: "100vh", padding: 30, fontFamily: "Arial" }}>
-      <h1 style={{ marginBottom: 10 }}>🔐 Painel Admin</h1>
-
-      <div style={{ maxWidth: 520, border: "1px solid #222", borderRadius: 12, padding: 16, background: "#0f0f0f" }}>
-        <h2 style={{ marginTop: 0 }}>Atualizar versão das keys</h2>
-
-        <label style={{ display: "block", marginBottom: 8, opacity: 0.85 }}>Versão desejada</label>
-        <input
-          value={version}
-          onChange={(e) => setVersion(e.target.value)}
-          placeholder="ex: 1.1"
-          style={{
-            width: "100%",
-            padding: 12,
-            borderRadius: 10,
-            border: "1px solid #333",
-            background: "#0b0b0b",
-            color: "#fff",
-            outline: "none",
-            marginBottom: 12,
-          }}
-        />
-
-        <label style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-          <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} />
-          <span>Atualizar apenas keys ativas</span>
-        </label>
-
-        <button
-          onClick={bulkUpdate}
-          style={{
-            width: "100%",
-            padding: 12,
-            borderRadius: 10,
-            border: "none",
-            background: "#00ff99",
-            cursor: "pointer",
-            fontWeight: 700,
-          }}
-        >
-          Atualizar versão de todas
-        </button>
-
-        {msg && <p style={{ marginTop: 12, opacity: 0.9 }}>{msg}</p>}
-      </div>
-    </div>
-  );
-}
-
-
+// pages/admin/index.js
 import { useEffect, useMemo, useState } from "react";
 
 export default function AdminPanel() {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  // gerar key
   const [days, setDays] = useState(30);
+
+  // paginação / listagem
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
 
+  // filtros
   const [query, setQuery] = useState("");
   const [onlyActive, setOnlyActive] = useState(false);
+
+  // bulk update version
+  const [bulkVersion, setBulkVersion] = useState("1.0");
+  const [bulkOnlyActive, setBulkOnlyActive] = useState(true);
+  const [bulkMsg, setBulkMsg] = useState("");
 
   const [data, setData] = useState({ total: 0, licenses: [] });
   const [toast, setToast] = useState(null); // { type: "ok"|"err", msg: string }
@@ -115,14 +53,11 @@ export default function AdminPanel() {
     try {
       json = JSON.parse(text);
     } catch {
-      // se não for JSON, guarda como texto
       json = { ok: false, message: text };
     }
 
     if (!res.ok) {
-      // 401/403 -> manda pro login (se você tiver /admin/login)
       if (res.status === 401 || res.status === 403) {
-        // se não tiver página de login, remove esse redirect
         window.location.href = "/admin/login";
       }
       throw new Error(json?.message || `HTTP ${res.status}`);
@@ -155,7 +90,6 @@ export default function AdminPanel() {
 
     return (data.licenses || []).filter((l) => {
       if (onlyActive && !l.is_active) return false;
-
       if (!q) return true;
 
       const key = String(l.key || "").toLowerCase();
@@ -220,6 +154,23 @@ export default function AdminPanel() {
     }
   };
 
+  const bulkUpdateVersion = async () => {
+    setBulkMsg("Atualizando...");
+    try {
+      const json = await fetchJson("/api/admin/bulk-update-version", {
+        method: "POST",
+        body: JSON.stringify({ version: bulkVersion, only_active: bulkOnlyActive }),
+      });
+
+      setBulkMsg(`✅ ${json.updated} keys -> v${json.version}`);
+      showToast("ok", `Atualizou ${json.updated} keys para v${json.version}`);
+      await loadLicenses();
+    } catch (e) {
+      setBulkMsg(`❌ ${e.message}`);
+      showToast("err", e.message);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil((data.total || 0) / limit));
 
   return (
@@ -268,9 +219,7 @@ export default function AdminPanel() {
         {/* Create */}
         <div style={styles.card}>
           <div style={styles.cardTitle}>Gerar Key</div>
-          <div style={styles.cardDesc}>
-            Cria uma key nova com expiração em X dias.
-          </div>
+          <div style={styles.cardDesc}>Cria uma key nova com expiração em X dias.</div>
 
           <div style={styles.row}>
             <label style={styles.label}>Dias</label>
@@ -299,6 +248,39 @@ export default function AdminPanel() {
           <div style={{ marginTop: 10, color: "#8a8a8a", fontSize: 12 }}>
             Dica: depois dá “copiar” na tabela.
           </div>
+        </div>
+
+        {/* Bulk Update Version */}
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Forçar Update (versão)</div>
+          <div style={styles.cardDesc}>Atualiza a versão exigida para todas as keys.</div>
+
+          <div style={styles.row}>
+            <label style={styles.label}>Versão</label>
+            <input
+              style={styles.input}
+              placeholder="ex: 1.1"
+              value={bulkVersion}
+              onChange={(e) => setBulkVersion(e.target.value)}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10 }}>
+            <label style={{ display: "flex", gap: 8, alignItems: "center", color: "#cfcfcf" }}>
+              <input
+                type="checkbox"
+                checked={bulkOnlyActive}
+                onChange={(e) => setBulkOnlyActive(e.target.checked)}
+              />
+              Atualizar só ativas
+            </label>
+          </div>
+
+          <button style={styles.btnPrimary} onClick={bulkUpdateVersion}>
+            Atualizar versão de todas
+          </button>
+
+          {bulkMsg && <div style={{ marginTop: 10, color: "#bdbdbd", fontSize: 12 }}>{bulkMsg}</div>}
         </div>
 
         {/* Filters */}
@@ -429,18 +411,10 @@ export default function AdminPanel() {
 
                     <td style={styles.tdRight}>
                       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                        <button
-                          style={styles.btnSmall}
-                          onClick={() => resetHwid(l.key)}
-                          title="Resetar HWID"
-                        >
+                        <button style={styles.btnSmall} onClick={() => resetHwid(l.key)}>
                           Reset HWID
                         </button>
-                        <button
-                          style={styles.btnSmallDanger}
-                          onClick={() => deleteKey(l.key)}
-                          title="Deletar"
-                        >
+                        <button style={styles.btnSmallDanger} onClick={() => deleteKey(l.key)}>
                           Deletar
                         </button>
                       </div>
@@ -455,7 +429,7 @@ export default function AdminPanel() {
 
       <div style={styles.footer}>
         <span style={{ opacity: 0.7 }}>
-          Dica: se quiser, depois a gente adiciona “ativar/desativar”, “editar expiração” e logs.
+          Se quiser, depois a gente adiciona ativar/desativar, editar expiração e logs.
         </span>
       </div>
     </div>
@@ -465,7 +439,8 @@ export default function AdminPanel() {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "radial-gradient(1000px 500px at 20% 0%, #151515 0%, #0b0b0b 55%, #070707 100%)",
+    background:
+      "radial-gradient(1000px 500px at 20% 0%, #151515 0%, #0b0b0b 55%, #070707 100%)",
     color: "#fff",
     fontFamily: "Arial, sans-serif",
     padding: 22,
@@ -580,15 +555,8 @@ const styles = {
     borderBottom: "1px solid rgba(255,255,255,0.06)",
     background: "rgba(255,255,255,0.03)",
   },
-  tr: {
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-  },
-  td: {
-    padding: "12px 12px",
-    fontSize: 13,
-    color: "#dedede",
-    verticalAlign: "middle",
-  },
+  tr: { borderBottom: "1px solid rgba(255,255,255,0.05)" },
+  td: { padding: "12px 12px", fontSize: 13, color: "#dedede", verticalAlign: "middle" },
   tdMono: {
     padding: "12px 12px",
     fontSize: 13,
@@ -596,18 +564,8 @@ const styles = {
     fontFamily: "Consolas, monospace",
     verticalAlign: "middle",
   },
-  tdRight: {
-    padding: "12px 12px",
-    fontSize: 13,
-    color: "#dedede",
-    textAlign: "right",
-    verticalAlign: "middle",
-  },
-  empty: {
-    padding: 18,
-    textAlign: "center",
-    color: "#9b9b9b",
-  },
+  tdRight: { padding: "12px 12px", fontSize: 13, color: "#dedede", textAlign: "right" },
+  empty: { padding: 18, textAlign: "center", color: "#9b9b9b" },
   pill: {
     display: "inline-block",
     padding: "6px 10px",
@@ -644,10 +602,5 @@ const styles = {
     cursor: "pointer",
     fontWeight: 800,
   },
-  footer: {
-    marginTop: 14,
-    color: "#b5b5b5",
-    fontSize: 12,
-    textAlign: "center",
-  },
+  footer: { marginTop: 14, color: "#b5b5b5", fontSize: 12, textAlign: "center" },
 };
