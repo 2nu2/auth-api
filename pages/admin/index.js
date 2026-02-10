@@ -1,223 +1,4 @@
-// pages/admin/index.js
 import { useEffect, useMemo, useState } from "react";
-
-const ui = {
-  page: {
-    minHeight: "100vh",
-    background:
-      "radial-gradient(900px 500px at 15% 10%, rgba(0,255,153,0.08) 0%, transparent 55%), radial-gradient(900px 500px at 85% 20%, rgba(120,80,255,0.06) 0%, transparent 60%), linear-gradient(180deg, #070708 0%, #050505 100%)",
-    color: "#fff",
-    fontFamily: "Arial, sans-serif",
-    padding: 22,
-    position: "relative",
-    overflowX: "hidden",
-  },
-  gridGlow: {
-    position: "absolute",
-    inset: 0,
-    backgroundImage:
-      "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-    backgroundSize: "56px 56px",
-    maskImage:
-      "radial-gradient(520px 280px at 30% 10%, black 0%, transparent 70%)",
-    opacity: 0.75,
-    pointerEvents: "none",
-  },
-  container: { position: "relative", zIndex: 2, maxWidth: 1280, margin: "0 auto" },
-
-  topbar: {
-    position: "sticky",
-    top: 0,
-    zIndex: 50,
-    backdropFilter: "blur(10px)",
-    background: "rgba(8,8,10,0.55)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: 18,
-    padding: "14px 14px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 14,
-    marginBottom: 14,
-    boxShadow: "0 14px 45px rgba(0,0,0,0.35)",
-  },
-  title: { fontSize: 18, fontWeight: 900, letterSpacing: 0.2 },
-  sub: { marginTop: 4, color: "rgba(255,255,255,0.60)", fontSize: 12 },
-
-  actions: { display: "flex", gap: 10, alignItems: "center" },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(12, 1fr)",
-    gap: 14,
-  },
-
-  card: {
-    background: "rgba(14,14,16,0.72)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 18,
-    padding: 16,
-    boxShadow: "0 14px 45px rgba(0,0,0,0.35)",
-    backdropFilter: "blur(10px)",
-  },
-  cardTitle: { fontSize: 14, fontWeight: 900, marginBottom: 6, letterSpacing: 0.2 },
-  cardDesc: { color: "rgba(255,255,255,0.60)", fontSize: 12, marginBottom: 12 },
-
-  row: { display: "flex", gap: 10, alignItems: "center", marginTop: 10 },
-  label: { width: 70, color: "rgba(255,255,255,0.72)", fontSize: 12 },
-
-  input: {
-    flex: 1,
-    padding: "11px 12px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.10)",
-    outline: "none",
-    background: "rgba(0,0,0,0.25)",
-    color: "#fff",
-  },
-  select: {
-    padding: "9px 10px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(0,0,0,0.25)",
-    color: "#fff",
-    outline: "none",
-  },
-
-  btnPrimary: {
-    width: "100%",
-    padding: "12px 12px",
-    borderRadius: 14,
-    border: "1px solid rgba(0,255,153,0.25)",
-    background:
-      "linear-gradient(180deg, rgba(0,255,153,0.18), rgba(0,255,153,0.08))",
-    color: "#6bffb8",
-    fontWeight: 900,
-    cursor: "pointer",
-    boxShadow: "0 12px 32px rgba(0,0,0,0.35)",
-    transition: "transform 120ms ease, box-shadow 120ms ease",
-  },
-  btnGhost: {
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.03)",
-    color: "#e6e6e6",
-    cursor: "pointer",
-  },
-  btnDangerLink: {
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,77,77,0.25)",
-    background:
-      "linear-gradient(180deg, rgba(255,77,77,0.18), rgba(255,77,77,0.08))",
-    color: "#ffb0b0",
-    fontWeight: 900,
-    textDecoration: "none",
-    display: "inline-block",
-  },
-  badgeBtn: {
-    padding: "5px 9px",
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.03)",
-    color: "#d8d8d8",
-    cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 800,
-  },
-  btnSmall: {
-    padding: "9px 10px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.03)",
-    color: "#e6e6e6",
-    cursor: "pointer",
-    fontWeight: 800,
-  },
-  btnSmallDanger: {
-    padding: "9px 10px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,77,77,0.25)",
-    background: "rgba(255,77,77,0.08)",
-    color: "#ffb0b0",
-    cursor: "pointer",
-    fontWeight: 900,
-  },
-
-  toast: {
-    position: "fixed",
-    right: 18,
-    top: 18,
-    padding: "12px 14px",
-    borderRadius: 14,
-    border: "1px solid",
-    boxShadow: "0 14px 45px rgba(0,0,0,0.55)",
-    zIndex: 9999,
-    maxWidth: 520,
-    backdropFilter: "blur(10px)",
-  },
-
-  tableWrap: {
-    marginTop: 10,
-    overflow: "auto",
-    borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(0,0,0,0.18)",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    minWidth: 860,
-  },
-  th: {
-    position: "sticky",
-    top: 0,
-    textAlign: "left",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.68)",
-    padding: "12px 12px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(12,12,14,0.85)",
-    backdropFilter: "blur(10px)",
-    zIndex: 2,
-  },
-  thRight: {
-    position: "sticky",
-    top: 0,
-    textAlign: "right",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.68)",
-    padding: "12px 12px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(12,12,14,0.85)",
-    backdropFilter: "blur(10px)",
-    zIndex: 2,
-  },
-  tr: { borderBottom: "1px solid rgba(255,255,255,0.06)" },
-  td: { padding: "12px 12px", fontSize: 13, color: "rgba(255,255,255,0.82)", verticalAlign: "middle" },
-  tdMono: {
-    padding: "12px 12px",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.86)",
-    fontFamily: "Consolas, monospace",
-    verticalAlign: "middle",
-  },
-  tdRight: { padding: "12px 12px", fontSize: 13, color: "rgba(255,255,255,0.82)", textAlign: "right" },
-  empty: { padding: 18, textAlign: "center", color: "rgba(255,255,255,0.55)" },
-
-  pill: {
-    display: "inline-block",
-    padding: "6px 10px",
-    borderRadius: 999,
-    border: "1px solid",
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 0.2,
-  },
-
-  footer: { marginTop: 14, color: "rgba(255,255,255,0.55)", fontSize: 12, textAlign: "center" },
-};
 
 export default function AdminPanel() {
   const [loading, setLoading] = useState(false);
@@ -385,283 +166,592 @@ export default function AdminPanel() {
 
   return (
     <div style={ui.page}>
-      <div style={ui.gridGlow} />
+      <div style={ui.overlay} />
 
-      <div style={ui.container}>
-        {/* Top bar */}
-        <div style={ui.topbar}>
+      {/* “modal app” */}
+      <div style={ui.modal}>
+        {/* top right close */}
+        <a href="/api/admin/logout" style={ui.close} title="Sair">
+          ×
+        </a>
+
+        {/* header */}
+        <div style={ui.header}>
           <div>
-            <div style={ui.title}>Painel Admin</div>
-            <div style={ui.sub}>Gerenciar licenças (Supabase + Vercel)</div>
+            <div style={ui.title}>admin panel</div>
+            <div style={ui.sub}>
+              keys: <b style={{ color: "rgba(255,255,255,0.9)" }}>{data.total || 0}</b> • página{" "}
+              <b style={{ color: "rgba(255,255,255,0.9)" }}>{page}</b>/{totalPages}
+            </div>
           </div>
 
-          <div style={ui.actions}>
-            <button
-              style={ui.btnGhost}
-              onClick={() => loadLicenses()}
-              disabled={loading}
-              title="Recarregar"
-            >
-              {loading ? "Carregando..." : "Recarregar"}
+          <div style={ui.headerBtns}>
+            <button style={ui.btnFlat} onClick={() => loadLicenses()} disabled={loading}>
+              {loading ? "loading..." : "reload"}
             </button>
-
-            <a href="/api/admin/logout" style={ui.btnDangerLink}>
-              Sair
+            <a href="/api/admin/logout" style={ui.btnFlatDanger}>
+              logout
             </a>
           </div>
         </div>
 
-        {/* Toast */}
+        {/* toast */}
         {toast && (
           <div
             style={{
               ...ui.toast,
-              borderColor: toast.type === "ok" ? "rgba(0,255,153,0.28)" : "rgba(255,77,77,0.30)",
-              background: toast.type === "ok" ? "rgba(9,18,14,0.88)" : "rgba(18,9,9,0.88)",
+              borderColor:
+                toast.type === "ok" ? "rgba(150,190,255,0.35)" : "rgba(255,80,80,0.30)",
+              background:
+                toast.type === "ok" ? "rgba(15,20,28,0.90)" : "rgba(20,12,12,0.90)",
             }}
           >
-            <span style={{ opacity: 0.92, fontWeight: 800 }}>
-              {toast.type === "ok" ? "✅ " : "❌ "}
-              {toast.msg}
-            </span>
+            {toast.type === "ok" ? "✅ " : "❌ "}
+            {toast.msg}
           </div>
         )}
 
-        {/* Cards */}
-        <div style={ui.grid}>
-          {/* Create */}
-          <div style={{ ...ui.card, gridColumn: "span 4" }}>
-            <div style={ui.cardTitle}>Gerar Key</div>
-            <div style={ui.cardDesc}>Cria uma key nova com expiração em X dias.</div>
+        {/* content */}
+        <div style={ui.content}>
+          {/* left: actions */}
+          <div style={ui.leftCol}>
+            <div style={ui.block}>
+              <div style={ui.blockTitle}>generate key</div>
+              <div style={ui.blockSub}>create a new license expiring in X days</div>
 
-            <div style={ui.row}>
-              <label style={ui.label}>Dias</label>
-              <input
-                style={ui.input}
-                type="number"
-                value={days}
-                min={1}
-                max={3650}
-                onChange={(e) => setDays(e.target.value)}
-              />
+              <div style={ui.row}>
+                <div style={ui.label}>days</div>
+                <input
+                  style={ui.input}
+                  type="number"
+                  value={days}
+                  min={1}
+                  max={3650}
+                  onChange={(e) => setDays(e.target.value)}
+                />
+              </div>
+
+              <button
+                style={{
+                  ...ui.btnBlue,
+                  opacity: creating ? 0.75 : 1,
+                  cursor: creating ? "not-allowed" : "pointer",
+                }}
+                onClick={createKey}
+                disabled={creating}
+              >
+                {creating ? "authorizing..." : "authorize"}
+              </button>
             </div>
 
-            <button
-              style={{
-                ...ui.btnPrimary,
-                marginTop: 12,
-                opacity: creating ? 0.7 : 1,
-                cursor: creating ? "not-allowed" : "pointer",
-              }}
-              onClick={createKey}
-              disabled={creating}
-              onMouseEnter={(e) => {
-                if (creating) return;
-                e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow =
-                  "0 18px 55px rgba(0,0,0,0.40), 0 0 0 1px rgba(0,255,153,0.25)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0px)";
-                e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.35)";
-              }}
-            >
-              {creating ? "Gerando..." : "Gerar key"}
-            </button>
+            <div style={ui.block}>
+              <div style={ui.blockTitle}>force update</div>
+              <div style={ui.blockSub}>set required version for licenses</div>
 
-            <div style={{ marginTop: 10, color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
-              Dica: depois dá “copiar” na tabela.
-            </div>
-          </div>
+              <div style={ui.row}>
+                <div style={ui.label}>version</div>
+                <input
+                  style={ui.input}
+                  value={bulkVersion}
+                  onChange={(e) => setBulkVersion(e.target.value)}
+                  placeholder="ex: 1.1"
+                />
+              </div>
 
-          {/* Bulk Update Version */}
-          <div style={{ ...ui.card, gridColumn: "span 4" }}>
-            <div style={ui.cardTitle}>Forçar Update (versão)</div>
-            <div style={ui.cardDesc}>Atualiza a versão exigida para todas as keys.</div>
-
-            <div style={ui.row}>
-              <label style={ui.label}>Versão</label>
-              <input
-                style={ui.input}
-                placeholder="ex: 1.1"
-                value={bulkVersion}
-                onChange={(e) => setBulkVersion(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10 }}>
-              <label style={{ display: "flex", gap: 8, alignItems: "center", color: "rgba(255,255,255,0.75)" }}>
+              <label style={ui.checkRow}>
                 <input
                   type="checkbox"
                   checked={bulkOnlyActive}
                   onChange={(e) => setBulkOnlyActive(e.target.checked)}
                 />
-                Atualizar só ativas
+                <span>only active</span>
               </label>
+
+              <button style={ui.btnBlue} onClick={bulkUpdateVersion}>
+                authorize
+              </button>
+
+              {bulkMsg ? <div style={ui.msg}>{bulkMsg}</div> : null}
             </div>
 
-            <button style={{ ...ui.btnPrimary, marginTop: 12 }} onClick={bulkUpdateVersion}>
-              Atualizar versão de todas
-            </button>
+            <div style={ui.block}>
+              <div style={ui.blockTitle}>filters</div>
+              <div style={ui.blockSub}>search by key or hwid</div>
 
-            {bulkMsg && (
-              <div style={{ marginTop: 10, color: "rgba(255,255,255,0.70)", fontSize: 12 }}>
-                {bulkMsg}
+              <div style={ui.row}>
+                <div style={ui.label}>search</div>
+                <input
+                  style={ui.input}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="key / hwid"
+                />
               </div>
-            )}
-          </div>
 
-          {/* Filters */}
-          <div style={{ ...ui.card, gridColumn: "span 4" }}>
-            <div style={ui.cardTitle}>Filtros</div>
-            <div style={ui.cardDesc}>Pesquise por key ou HWID.</div>
-
-            <div style={ui.row}>
-              <label style={ui.label}>Busca</label>
-              <input
-                style={ui.input}
-                placeholder="ex: MAL0-.... ou HWID"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10 }}>
-              <label style={{ display: "flex", gap: 8, alignItems: "center", color: "rgba(255,255,255,0.75)" }}>
+              <label style={ui.checkRow}>
                 <input
                   type="checkbox"
                   checked={onlyActive}
                   onChange={(e) => setOnlyActive(e.target.checked)}
                 />
-                Mostrar só ativas
+                <span>only active</span>
               </label>
-            </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 12, alignItems: "center" }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ color: "rgba(255,255,255,0.60)", fontSize: 12 }}>Por página</span>
-                <select
-                  style={ui.select}
-                  value={limit}
-                  onChange={(e) => {
-                    setPage(1);
-                    setLimit(Number(e.target.value));
-                  }}
-                >
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                  <option value={200}>200</option>
-                </select>
-              </div>
-
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-                <button
-                  style={ui.btnGhost}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
-                  ◀
-                </button>
-                <div style={{ color: "rgba(255,255,255,0.60)", fontSize: 12 }}>
-                  Página <b style={{ color: "#fff" }}>{page}</b> /{" "}
-                  <b style={{ color: "#fff" }}>{totalPages}</b>
+              <div style={ui.rowSplit}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span style={ui.miniLabel}>per page</span>
+                  <select
+                    style={ui.select}
+                    value={limit}
+                    onChange={(e) => {
+                      setPage(1);
+                      setLimit(Number(e.target.value));
+                    }}
+                  >
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                  </select>
                 </div>
-                <button
-                  style={ui.btnGhost}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                >
-                  ▶
-                </button>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    style={ui.btnMini}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    ◀
+                  </button>
+                  <span style={ui.miniLabel}>
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    style={ui.btnMini}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    ▶
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Table */}
-        <div style={{ ...ui.card, marginTop: 14 }}>
-          <div style={ui.cardTitle}>Licenças</div>
-          <div style={ui.cardDesc}>
-            Total no banco: <b style={{ color: "#fff" }}>{data.total || 0}</b> — exibindo{" "}
-            <b style={{ color: "#fff" }}>{filteredLicenses.length}</b> após filtros.
-          </div>
+          {/* right: table */}
+          <div style={ui.rightCol}>
+            <div style={ui.tableShell}>
+              <div style={ui.tableHeader}>
+                <div style={ui.tableTitle}>licenses</div>
+                <div style={ui.tableSub}>
+                  showing <b style={{ color: "rgba(255,255,255,0.9)" }}>{filteredLicenses.length}</b>
+                </div>
+              </div>
 
-          <div style={ui.tableWrap}>
-            <table style={ui.table}>
-              <thead>
-                <tr>
-                  <th style={ui.th}>Key</th>
-                  <th style={ui.th}>HWID</th>
-                  <th style={ui.th}>Expira</th>
-                  <th style={ui.th}>Ativa</th>
-                  <th style={ui.thRight}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLicenses.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={ui.empty}>
-                      {loading ? "Carregando..." : "Nenhuma licença encontrada."}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredLicenses.map((l) => (
-                    <tr key={l.key} style={ui.tr}>
-                      <td style={ui.tdMono}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ color: "rgba(255,255,255,0.92)" }}>{l.key}</span>
-                          <button style={ui.badgeBtn} onClick={() => copy(l.key)}>
-                            copiar
-                          </button>
-                        </div>
-                      </td>
-
-                      <td style={ui.td}>
-                        <span style={{ color: l.hwid ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.35)" }}>
-                          {l.hwid || "—"}
-                        </span>
-                      </td>
-
-                      <td style={ui.td}>{fmtDate(l.expires_at)}</td>
-
-                      <td style={ui.td}>
-                        <span
-                          style={{
-                            ...ui.pill,
-                            background: l.is_active ? "rgba(0,255,153,0.10)" : "rgba(255,77,77,0.10)",
-                            borderColor: l.is_active ? "rgba(0,255,153,0.28)" : "rgba(255,77,77,0.30)",
-                            color: l.is_active ? "#6bffb8" : "#ffb0b0",
-                          }}
-                        >
-                          {l.is_active ? "ativa" : "inativa"}
-                        </span>
-                      </td>
-
-                      <td style={ui.tdRight}>
-                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                          <button style={ui.btnSmall} onClick={() => resetHwid(l.key)}>
-                            Reset HWID
-                          </button>
-                          <button style={ui.btnSmallDanger} onClick={() => deleteKey(l.key)}>
-                            Deletar
-                          </button>
-                        </div>
-                      </td>
+              <div style={ui.tableWrap}>
+                <table style={ui.table}>
+                  <thead>
+                    <tr>
+                      <th style={ui.th}>key</th>
+                      <th style={ui.th}>hwid</th>
+                      <th style={ui.th}>expires</th>
+                      <th style={ui.th}>active</th>
+                      <th style={ui.thRight}>actions</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {filteredLicenses.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={ui.empty}>
+                          {loading ? "loading..." : "no licenses"}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLicenses.map((l, i) => (
+                        <tr
+                          key={l.key}
+                          style={{
+                            ...ui.tr,
+                            background: i % 2 ? "rgba(255,255,255,0.015)" : "transparent",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(120,170,255,0.06)")}
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = i % 2 ? "rgba(255,255,255,0.015)" : "transparent")
+                          }
+                        >
+                          <td style={ui.tdMono}>
+                            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                              <span>{l.key}</span>
+                              <button style={ui.badge} onClick={() => copy(l.key)}>
+                                copy
+                              </button>
+                            </div>
+                          </td>
+
+                          <td style={ui.td}>{l.hwid || "—"}</td>
+                          <td style={ui.td}>{fmtDate(l.expires_at)}</td>
+
+                          <td style={ui.td}>
+                            <span
+                              style={{
+                                ...ui.pill,
+                                borderColor: l.is_active ? "rgba(150,190,255,0.35)" : "rgba(255,80,80,0.28)",
+                                background: l.is_active ? "rgba(120,170,255,0.10)" : "rgba(255,80,80,0.08)",
+                                color: l.is_active ? "rgba(190,220,255,0.95)" : "rgba(255,190,190,0.95)",
+                              }}
+                            >
+                              {l.is_active ? "active" : "inactive"}
+                            </span>
+                          </td>
+
+                          <td style={ui.tdRight}>
+                            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                              <button style={ui.btnRow} onClick={() => resetHwid(l.key)}>
+                                reset
+                              </button>
+                              <button style={ui.btnRowDanger} onClick={() => deleteKey(l.key)}>
+                                delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
         <div style={ui.footer}>
-          <span style={{ opacity: 0.85 }}>
-            Se quiser, depois a gente adiciona ativar/desativar, editar expiração e logs.
-          </span>
+          tip: keep it simple • blur • flat buttons • “authorize” vibe
         </div>
       </div>
     </div>
   );
 }
+
+const ui = {
+  page: {
+    minHeight: "100vh",
+    background: "linear-gradient(180deg, #0b0c0f 0%, #08090c 100%)",
+    display: "grid",
+    placeItems: "center",
+    padding: 18,
+    fontFamily: "Arial, sans-serif",
+    position: "relative",
+    overflow: "hidden",
+    color: "#fff",
+  },
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(700px 380px at 50% 45%, rgba(90,120,170,0.10) 0%, rgba(0,0,0,0) 55%), rgba(0,0,0,0.55)",
+    backdropFilter: "blur(6px)",
+    WebkitBackdropFilter: "blur(6px)",
+  },
+
+  modal: {
+    width: "min(1200px, 96vw)",
+    height: "min(760px, 88vh)",
+    borderRadius: 14,
+    background: "rgba(16,16,18,0.72)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    boxShadow: "0 30px 90px rgba(0,0,0,0.65)",
+    position: "relative",
+    zIndex: 2,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  close: {
+    position: "absolute",
+    right: 10,
+    top: 6,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.03)",
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 22,
+    lineHeight: "34px",
+    textAlign: "center",
+    textDecoration: "none",
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    padding: "14px 16px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(0,0,0,0.20)",
+    backdropFilter: "blur(6px)",
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: 0.2,
+    textTransform: "lowercase",
+    color: "rgba(255,255,255,0.92)",
+  },
+  sub: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.55)",
+  },
+  headerBtns: { display: "flex", gap: 10, alignItems: "center" },
+
+  btnFlat: {
+    height: 36,
+    padding: "0 12px",
+    borderRadius: 8,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.03)",
+    color: "rgba(255,255,255,0.85)",
+    cursor: "pointer",
+  },
+  btnFlatDanger: {
+    height: 36,
+    padding: "0 12px",
+    borderRadius: 8,
+    border: "1px solid rgba(255,80,80,0.25)",
+    background: "rgba(255,80,80,0.08)",
+    color: "rgba(255,190,190,0.95)",
+    textDecoration: "none",
+    display: "grid",
+    placeItems: "center",
+    fontWeight: 600,
+  },
+
+  toast: {
+    position: "fixed",
+    right: 18,
+    top: 18,
+    padding: "12px 14px",
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.10)",
+    boxShadow: "0 14px 45px rgba(0,0,0,0.55)",
+    zIndex: 9999,
+    maxWidth: 520,
+    backdropFilter: "blur(10px)",
+    color: "rgba(255,255,255,0.9)",
+  },
+
+  content: {
+    display: "grid",
+    gridTemplateColumns: "380px 1fr",
+    gap: 14,
+    padding: 14,
+    height: "100%",
+    overflow: "hidden",
+  },
+
+  leftCol: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    overflow: "auto",
+    paddingRight: 4,
+  },
+  rightCol: { overflow: "hidden" },
+
+  block: {
+    background: "rgba(10, 24, 40, 0.45)",
+    border: "1px solid rgba(120,170,255,0.10)",
+    borderRadius: 6,
+    padding: 14,
+    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.25)",
+  },
+  blockTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "rgba(255,255,255,0.90)",
+    textTransform: "lowercase",
+  },
+  blockSub: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.55)",
+  },
+
+  row: { display: "flex", gap: 10, alignItems: "center", marginTop: 12 },
+  label: { width: 70, fontSize: 12, color: "rgba(255,255,255,0.55)" },
+
+  input: {
+    flex: 1,
+    height: 38,
+    borderRadius: 6,
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(0,0,0,0.35)",
+    outline: "none",
+    color: "rgba(255,255,255,0.88)",
+    padding: "0 10px",
+  },
+
+  checkRow: {
+    marginTop: 10,
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+    color: "rgba(255,255,255,0.70)",
+    fontSize: 12,
+  },
+
+  btnBlue: {
+    marginTop: 12,
+    height: 44,
+    width: "100%",
+    borderRadius: 2,
+    border: "1px solid rgba(150,190,255,0.35)",
+    background: "rgba(130, 175, 240, 0.85)",
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 16,
+    fontWeight: 500,
+    letterSpacing: 0.2,
+    cursor: "pointer",
+  },
+
+  msg: {
+    marginTop: 10,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.70)",
+  },
+
+  rowSplit: {
+    marginTop: 12,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+  },
+  miniLabel: { fontSize: 12, color: "rgba(255,255,255,0.55)" },
+  select: {
+    height: 34,
+    borderRadius: 6,
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(0,0,0,0.35)",
+    color: "rgba(255,255,255,0.85)",
+    outline: "none",
+    padding: "0 8px",
+  },
+  btnMini: {
+    height: 34,
+    width: 36,
+    borderRadius: 8,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.03)",
+    color: "rgba(255,255,255,0.85)",
+    cursor: "pointer",
+  },
+
+  tableShell: {
+    height: "100%",
+    background: "rgba(10, 24, 40, 0.45)",
+    border: "1px solid rgba(120,170,255,0.10)",
+    borderRadius: 6,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  },
+  tableHeader: {
+    padding: "12px 14px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(0,0,0,0.22)",
+  },
+  tableTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "rgba(255,255,255,0.90)",
+    textTransform: "lowercase",
+  },
+  tableSub: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.55)",
+  },
+
+  tableWrap: { overflow: "auto", height: "100%" },
+  table: { width: "100%", borderCollapse: "collapse", minWidth: 860 },
+
+  th: {
+    position: "sticky",
+    top: 0,
+    textAlign: "left",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.60)",
+    padding: "10px 12px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(0,0,0,0.45)",
+    backdropFilter: "blur(6px)",
+    zIndex: 2,
+    textTransform: "lowercase",
+  },
+  thRight: { position: "sticky", top: 0, textAlign: "right", ...this?.th },
+
+  tr: { borderBottom: "1px solid rgba(255,255,255,0.06)" },
+  td: { padding: "10px 12px", fontSize: 13, color: "rgba(255,255,255,0.82)", verticalAlign: "middle" },
+  tdMono: {
+    padding: "10px 12px",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.86)",
+    fontFamily: "Consolas, monospace",
+    verticalAlign: "middle",
+  },
+  tdRight: { padding: "10px 12px", fontSize: 13, color: "rgba(255,255,255,0.82)", textAlign: "right" },
+  empty: { padding: 18, textAlign: "center", color: "rgba(255,255,255,0.55)" },
+
+  badge: {
+    padding: "5px 9px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.03)",
+    color: "rgba(255,255,255,0.82)",
+    cursor: "pointer",
+    fontSize: 12,
+  },
+
+  btnRow: {
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.03)",
+    color: "rgba(255,255,255,0.85)",
+    cursor: "pointer",
+    fontWeight: 600,
+  },
+  btnRowDanger: {
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: "1px solid rgba(255,80,80,0.25)",
+    background: "rgba(255,80,80,0.08)",
+    color: "rgba(255,190,190,0.95)",
+    cursor: "pointer",
+    fontWeight: 700,
+  },
+
+  pill: {
+    display: "inline-block",
+    padding: "6px 10px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.12)",
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: 0.2,
+    textTransform: "lowercase",
+  },
+
+  footer: {
+    padding: "10px 14px",
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+    color: "rgba(255,255,255,0.45)",
+    fontSize: 12,
+    textAlign: "center",
+    background: "rgba(0,0,0,0.18)",
+  },
+};
